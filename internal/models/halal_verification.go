@@ -1,0 +1,18 @@
+package models
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type HalalVerification struct {
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	RestaurantID primitive.ObjectID `bson:"restaurant_id" json:"restaurant_id"`
+	RequestedBy  primitive.ObjectID `bson:"requested_by" json:"requested_by"`
+	Status       string             `bson:"status" json:"status"`
+	ProofType    string             `bson:"proof_type,omitempty" json:"proof_type,omitempty"`
+	ProofURLs    []string           `bson:"proof_urls,omitempty" json:"proof_urls,omitempty"`
+	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
+	ReviewedAt   time.Time          `bson:"reviewed_at,omitempty" json:"reviewed_at,omitempty"`
+}

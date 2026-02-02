@@ -1,0 +1,26 @@
+{{define "title"}}Register{{end}}
+
+{{define "main"}}
+<h2>Register</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" action="/register" class="form">
+  <label>Username</label>
+  <input name="username" required>
+
+  <label>Email</label>
+  <input name="email" type="email" required>
+
+  <label>Password</label>
+  <input name="password" type="password" required>
+
+  <label>Role</label>
+  <select name="role">
+    <option value="customer">Customer</option>
+    <option value="partner">Partner</option>
+  </select>
+
+  <button type="submit">Create account</button>
+</form>
+{{end}}

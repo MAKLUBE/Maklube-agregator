@@ -1,0 +1,16 @@
+{{define "title"}}Restaurants{{end}}
+
+{{define "main"}}
+<h2>Restaurants</h2>
+
+<ul>
+  {{range .Data}}
+    <li>
+      <a href="/restaurants/{{.ID.Hex}}">{{.Name}}</a>
+      <span class="muted">— halal: {{.HalalStatus}}</span>
+    </li>
+  {{else}}
+    <li class="muted">No restaurants yet</li>
+  {{end}}
+</ul>
+{{end}}

@@ -1,0 +1,18 @@
+{{define "base"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{template "title" .}} - Makluber</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+
+  {{template "nav" .}}
+  <main class="container">
+    {{template "main" .}}
+  </main>
+
+</body>
+</html>
+{{end}}
