@@ -7,6 +7,7 @@ import (
 
 	"github.com/MAKLUBE/AP1_Final_Project/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -33,7 +34,7 @@ func (s *UserStore) FindByEmail(ctx context.Context, email string) (*models.User
 	return &u, err
 }
 
-func (s *UserStore) FindByID(ctx context.Context, id any) (*models.User, error) {
+func (s *UserStore) FindByID(ctx context.Context, id primitive.ObjectID) (*models.User, error) {
 	var u models.User
 	err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&u)
 	if errors.Is(err, mongo.ErrNoDocuments) {

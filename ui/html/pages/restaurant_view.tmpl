@@ -1,0 +1,23 @@
+{{define "title"}}Restaurant{{end}}
+
+{{define "main"}}
+  {{ $r := index .Data "restaurant" }}
+  {{ $menu := index .Data "menu" }}
+
+  <h2>{{ $r.Name }}</h2>
+  <p class="muted">{{ $r.Description }}</p>
+  <p>Halal: <b>{{ $r.HalalStatus }}</b></p>
+
+  {{with $r.Address.MapURL}}
+    <p><a href="{{.}}" target="_blank">Open in 2GIS</a></p>
+  {{end}}
+
+  <h3>Menu</h3>
+  <ul>
+    {{range $menu}}
+      <li>{{.Name}} — {{.Price}}</li>
+    {{else}}
+      <li class="muted">No menu items</li>
+    {{end}}
+  </ul>
+{{end}}

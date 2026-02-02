@@ -6,6 +6,7 @@ import (
 
 	"github.com/MAKLUBE/AP1_Final_Project/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -35,7 +36,7 @@ func (s *RestaurantStore) List(ctx context.Context) ([]models.Restaurant, error)
 	return out, cur.Err()
 }
 
-func (s *RestaurantStore) FindByID(ctx context.Context, id any) (*models.Restaurant, error) {
+func (s *RestaurantStore) FindByID(ctx context.Context, id primitive.ObjectID) (*models.Restaurant, error) {
 	var r models.Restaurant
 	err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&r)
 	if errors.Is(err, mongo.ErrNoDocuments) {

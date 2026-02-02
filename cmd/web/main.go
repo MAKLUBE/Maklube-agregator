@@ -15,15 +15,17 @@ import (
 
 func main() {
 	logger := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	// ENV
 	mongoURI := getenv("MONGO_URI", "mongodb://localhost:27017")
 	mongoDBName := getenv("MONGO_DB", "Makluber")
+
 	// Mongo connect
 	client, err := db.NewMongoClient(mongoURI, 10*time.Second)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer func() { _ = client.Disconnect(nil) }()
+	defer func() {
+		_ = client.Disconnect(nil)
+	}()
 	database := client.Database(mongoDBName)
 
 	tc, err := app.NewTemplateCache("./ui/html")

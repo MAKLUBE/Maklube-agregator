@@ -39,7 +39,6 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 	if role == "partner" {
 		userRole = models.RolePartner
 	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		h.serverError(w, err)
