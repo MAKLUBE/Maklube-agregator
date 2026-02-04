@@ -20,4 +20,36 @@
       <li class="muted">No menu items</li>
     {{end}}
   </ul>
+  <h3>Reviews</h3>
+    <ul>
+      {{range $reviews}}
+        <li>
+          <b>{{.Rating}}/5</b> {{.Comment}}
+        </li>
+      {{else}}
+        <li class="muted">No reviews yet</li>
+      {{end}}
+    </ul>
+
+    {{if .User}}
+      <h4>Leave a review</h4>
+      {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+      <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">
+        <label>Rating</label>
+        <select name="rating" required>
+          <option value="5">5</option>
+          <option value="4">4</option>
+          <option value="3">3</option>
+          <option value="2">2</option>
+          <option value="1">1</option>
+        </select>
+
+        <label>Comment</label>
+        <input name="comment" maxlength="200">
+
+        <button type="submit">Submit review</button>
+      </form>
+    {{else}}
+      <p class="muted">Login to leave a review</p>
+    {{end}}
 {{end}}

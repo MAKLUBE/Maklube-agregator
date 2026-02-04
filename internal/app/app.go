@@ -14,4 +14,5 @@ type Application struct {
 	Sessions    SessionStore
 	Restaurants RestaurantStore
 	MenuItems   MenuItemStore
+	Reviews     ReviewStore
 }

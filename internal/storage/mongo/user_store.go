@@ -15,6 +15,14 @@ type UserStore struct {
 	col *mongo.Collection
 }
 
+func (s *UserStore) CreateRestaurant(ctx context.Context, restaurant *models.Restaurant) error {
+	_, err := s.col.InsertOne(ctx, restaurant)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewUserStore(db *mongo.Database) *UserStore {
 	return &UserStore{col: db.Collection("users")}
 }

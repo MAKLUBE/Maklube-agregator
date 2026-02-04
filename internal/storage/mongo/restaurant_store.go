@@ -44,3 +44,8 @@ func (s *RestaurantStore) FindByID(ctx context.Context, id primitive.ObjectID) (
 	}
 	return &r, err
 }
+
+func (s *RestaurantStore) Insert(ctx context.Context, r *models.Restaurant) error {
+	_, err := s.col.InsertOne(ctx, r)
+	return err
+}

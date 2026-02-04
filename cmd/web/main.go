@@ -33,11 +33,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	// Storage
 	userStore := mongo.NewUserStore(database)
 	sessionStore := mongo.NewSessionStore(database)
 	restaurantStore := mongo.NewRestaurantStore(database)
 	menuStore := mongo.NewMenuItemStore(database)
+	reviewStore := mongo.NewReviewStore(database)
 
 	application := &app.Application{
 		Logger:      logger,
@@ -46,11 +46,10 @@ func main() {
 		Sessions:    sessionStore,
 		Restaurants: restaurantStore,
 		MenuItems:   menuStore,
+		Reviews:     reviewStore,
 	}
 
-	// Router + middleware chain
 	r := handlers.Routes(application)
-
 	chain := middleware.New(application).Chain(r)
 
 	addr := getenv("ADDR", ":4000")

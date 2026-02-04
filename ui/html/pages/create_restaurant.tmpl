@@ -1,0 +1,35 @@
+{{define "title"}}Create restaurant{{end}}
+
+{{define "main"}}
+<h2>Create restaurant</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" action="/partner/restaurants/new" class="form">
+  <label>Name</label>
+  <input name="name" required>
+
+  <label>Description</label>
+  <input name="description">
+
+  <label>Phone</label>
+  <input name="phone">
+
+  <label>Address</label>
+  <input name="address_text" required>
+
+  <label>City</label>
+  <input name="city" required>
+
+  <label>District</label>
+  <input name="district">
+
+  <label>Map URL</label>
+  <input name="map_url">
+
+  <label>Instagram</label>
+  <input name="instagram">
+
+  <button type="submit">Create</button>
+</form>
+{{end}}

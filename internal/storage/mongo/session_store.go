@@ -28,10 +28,12 @@ func (s *SessionStore) Create(ctx context.Context, sess *models.Session) error {
 
 func (s *SessionStore) FindByToken(ctx context.Context, token string) (*models.Session, error) {
 	var sess models.Session
+
 	err := s.col.FindOne(ctx, bson.M{"token": token}).Decode(&sess)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, errors.New("not found")
 	}
+
 	if time.Now().UTC().After(sess.ExpiresAt) {
 		_ = s.Delete(ctx, token)
 		return nil, errors.New("expired")
