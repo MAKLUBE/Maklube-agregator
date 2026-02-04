@@ -6,6 +6,9 @@
   <div class="nav-right">
     {{if .User}}
       <span class="muted">Hi, {{.User.Username}}: Currently: ({{.User.Role}})</span>
+            {{if eq .User.Role "partner"}}
+              <a href="/partner/restaurants/new">Create restaurant</a>
+            {{end}}
       <form method="POST" action="/logout" style="display:inline;">
         <button type="submit">Logout</button>
       </form>

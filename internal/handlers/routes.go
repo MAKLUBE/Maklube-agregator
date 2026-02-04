@@ -23,8 +23,11 @@ func Routes(a *app.Application) http.Handler {
 
 	router.HandlerFunc("GET", "/restaurants", h.restaurantsList)
 	router.HandlerFunc("GET", "/restaurants/:id", h.restaurantView)
+	router.Handler("POST", "/restaurants/:id/reviews", mw.RequireAuth(http.HandlerFunc(h.reviewCreate)))
 
 	router.Handler("GET", "/partner/orders", mw.RequireRole(models.RolePartner, http.HandlerFunc(h.partnerIncomingOrders)))
+	router.Handler("GET", "/partner/restaurants/new", mw.RequireRole(models.RolePartner, http.HandlerFunc(h.restaurantCreateForm)))
+	router.Handler("POST", "/partner/restaurants/new", mw.RequireRole(models.RolePartner, http.HandlerFunc(h.restaurantCreatePost)))
 
 	router.Handler("GET", "/admin/halal", mw.RequireRole(models.RoleAdmin, http.HandlerFunc(h.adminHalalRequests)))
 

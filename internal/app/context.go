@@ -3,7 +3,6 @@ package app
 import "context"
 
 type contextKey string
-
 const (
 	ContextUserKey contextKey = "user"
 )
