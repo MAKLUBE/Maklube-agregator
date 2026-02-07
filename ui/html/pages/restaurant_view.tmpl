@@ -3,53 +3,61 @@
 {{define "main"}}
   {{ $r := index .Data "restaurant" }}
   {{ $menu := index .Data "menu" }}
+  {{ $reviews := index .Data "reviews" }}
 
-  <h2>{{ $r.Name }}</h2>
-  <p class="muted">{{ $r.Description }}</p>
-  <p>Halal: <b>{{ $r.HalalStatus }}</b></p>
-
-  {{with $r.Address.MapURL}}
-    <p><a href="{{.}}" target="_blank">Open in 2GIS</a></p>
-  {{end}}
-
-  <h3>Menu</h3>
-  <ul>
-    {{range $menu}}
-      <li>{{.Name}} — {{.Price}}</li>
-    {{else}}
-      <li class="muted">No menu items</li>
+  <section class="section card">
+    <h2>{{ $r.Name }}</h2>
+    <p class="muted">{{ $r.Description }}</p>
+    <p>Halal: <b>{{ $r.HalalStatus }}</b></p>
+    {{with $r.Address.MapURL}}
+      <p><a href="{{.}}" target="_blank">Open in 2GIS</a></p>
     {{end}}
-  </ul>
-  <h3>Reviews</h3>
-    <ul>
+
+  </section>
+
+  <section class="section">
+    <h3>Menu</h3>
+    <ul class="list">
+      {{range $menu}}
+        <li class="card">{{.Name}} — {{.Price}}</li>
+      {{else}}
+        <li class="card muted">No menu items</li>
+      {{end}}
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>Reviews</h3>
+    <ul class="list">
       {{range $reviews}}
-        <li>
+        <li class="card">
           <b>{{.Rating}}/5</b> {{.Comment}}
         </li>
       {{else}}
-        <li class="muted">No reviews yet</li>
+        <li class="card muted">No reviews yet</li>
       {{end}}
     </ul>
+  </section>
 
-    {{if .User}}
-      <h4>Leave a review</h4>
-      {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
-      <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">
-        <label>Rating</label>
-        <select name="rating" required>
-          <option value="5">5</option>
-          <option value="4">4</option>
-          <option value="3">3</option>
-          <option value="2">2</option>
-          <option value="1">1</option>
-        </select>
+  {{if .User}}
+    <h4>Leave a review</h4>
+    {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+    <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">
+      <label>Rating</label>
+      <select name="rating" required>
+        <option value="5">5</option>
+        <option value="4">4</option>
+        <option value="3">3</option>
+        <option value="2">2</option>
+        <option value="1">1</option>
+      </select>
 
-        <label>Comment</label>
-        <input name="comment" maxlength="200">
+      <label>Comment</label>
+      <input name="comment" maxlength="200">
 
-        <button type="submit">Submit review</button>
-      </form>
-    {{else}}
-      <p class="muted">Login to leave a review</p>
-    {{end}}
+      <button type="submit">Submit review</button>
+    </form>
+  {{else}}
+    <p class="muted">Login to leave a review</p>
+  {{end}}
 {{end}}

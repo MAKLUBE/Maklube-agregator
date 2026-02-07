@@ -3,9 +3,9 @@
 {{define "main"}}
 <h2>Restaurants</h2>
 
-<ul>
+<ul class="list">
   {{range .Data}}
-    <li>
+    <li class="card">
       <a href="/restaurants/{{.ID.Hex}}">{{.Name}}</a>
       <span class="muted">— halal: {{.HalalStatus}}</span>
     </li>

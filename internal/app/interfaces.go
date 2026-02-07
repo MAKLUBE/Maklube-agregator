@@ -32,5 +32,7 @@ type MenuItemStore interface {
 
 type ReviewStore interface {
 	ListByRestaurant(ctx context.Context, restaurantID primitive.ObjectID) ([]models.Review, error)
-	Insert(ctx context.Context, r *models.Review) error
+	ListAll(ctx context.Context) ([]models.Review, error)
+	Insert(ctx context.Context, restaurant *models.Review) error
+	SetHidden(ctx context.Context, id primitive.ObjectID, hidden bool, moderatorID primitive.ObjectID, note string) error
 }

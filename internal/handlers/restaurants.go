@@ -28,7 +28,6 @@ func (h *Handler) restaurantsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) restaurantView(w http.ResponseWriter, r *http.Request) {
-	// /restaurants/<id>
 	parts := splitPath(r.URL.Path)
 	if len(parts) < 2 {
 		h.clientError(w, http.StatusBadRequest)
@@ -166,7 +165,6 @@ func (h *Handler) reviewCreate(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	review := &models.Review{
 		RestaurantID: oid,
 		UserID:       u.ID,
