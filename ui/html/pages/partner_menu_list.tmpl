@@ -1,0 +1,28 @@
+{{define "title"}}Menu items{{end}}
+
+{{define "main"}}
+{{ $rest := index .Data "restaurant" }}
+{{ $items := index .Data "items" }}
+
+<h2>Menu items for {{ $rest.Name }}</h2>
+
+<div class="actions">
+  <a href="/partner/restaurants">Back to my restaurants</a>
+  <a href="/partner/restaurants/id/{{ $rest.ID.Hex }}/menu/new">Add menu item</a>
+</div>
+
+{{if $items}}
+  <ul class="list">
+    {{range $items}}
+      <li class="card">
+        <div><strong>{{.Name}}</strong> — {{.Price}}</div>
+        {{if .Description}}<div class="muted">{{.Description}}</div>{{end}}
+        <div class="muted">Available: {{.IsAvailable}}</div>
+        <a href="/partner/restaurants/id/{{ $rest.ID.Hex }}/menu-items/{{ .ID.Hex }}/edit">Edit</a>
+      </li>
+    {{end}}
+  </ul>
+{{else}}
+  <p class="muted">No menu items yet.</p>
+{{end}}
+{{end}}

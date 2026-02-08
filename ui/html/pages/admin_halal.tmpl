@@ -1,0 +1,36 @@
+{{define "title"}}Halal requests{{end}}
+
+{{define "main"}}
+<h2>Halal verification requests</h2>
+
+{{if .Data}}
+  <ul class="list">
+    {{range .Data}}
+      <li class="card">
+        <div><strong>Restaurant:</strong> {{.RestaurantID.Hex}}</div>
+        <div class="muted">Proof type: {{.ProofType}}</div>
+        {{if .ProofURLs}}
+          <div class="muted">Proof URLs:</div>
+          <ul>
+            {{range .ProofURLs}}
+              <li><a href="{{.}}" target="_blank">{{.}}</a></li>
+            {{end}}
+          </ul>
+        {{end}}
+        <form method="POST" action="/admin/halal/{{.ID.Hex}}/approve" class="form">
+          <label>Note (optional)</label>
+          <input name="note">
+          <button type="submit">Approve</button>
+        </form>
+        <form method="POST" action="/admin/halal/{{.ID.Hex}}/reject" class="form">
+          <label>Reason</label>
+          <input name="note">
+          <button type="submit">Reject</button>
+        </form>
+      </li>
+    {{end}}
+  </ul>
+{{else}}
+  <p class="muted">No pending requests.</p>
+{{end}}
+{{end}}

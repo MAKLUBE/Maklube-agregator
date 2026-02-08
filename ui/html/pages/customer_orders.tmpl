@@ -1,0 +1,21 @@
+{{define "title"}}My orders{{end}}
+
+{{define "main"}}
+<h2>My orders</h2>
+
+{{if .Data}}
+  <ul class="list">
+    {{range .Data}}
+      <li class="card">
+        <div><strong>Status:</strong> {{.OrderStatus}}</div>
+        <div><strong>Total:</strong> {{.Total}}</div>
+        <div class="muted">Delivery: {{.DeliveryType}}</div>
+        {{if .DeliveryAddr}}<div class="muted">Address: {{.DeliveryAddr}}</div>{{end}}
+        <div class="muted">Items: {{len .Items}}</div>
+      </li>
+    {{end}}
+  </ul>
+{{else}}
+  <p class="muted">No orders yet.</p>
+{{end}}
+{{end}}
