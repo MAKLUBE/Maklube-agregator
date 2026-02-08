@@ -1,55 +1,26 @@
-{{define "title"}}Restaurant{{end}}
+{{define "title"}}Register{{end}}
 
 {{define "main"}}
-  {{ $r := index .Data "restaurant" }}
-  {{ $menu := index .Data "menu" }}
+<h2>Register</h2>
 
-  <h2>{{ $r.Name }}</h2>
-  <p class="muted">{{ $r.Description }}</p>
-  <p>Halal: <b>{{ $r.HalalStatus }}</b></p>
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
 
-  {{with $r.Address.MapURL}}
-    <p><a href="{{.}}" target="_blank">Open in 2GIS</a></p>
-  {{end}}
+<form method="POST" action="/register" class="form">
+  <label>Username</label>
+  <input name="username" required>
 
-  <h3>Menu</h3>
-  <ul>
-    {{range $menu}}
-      <li>{{.Name}} — {{.Price}}</li>
-    {{else}}
-      <li class="muted">No menu items</li>
-    {{end}}
-  </ul>
-  <h3>Reviews</h3>
-    <ul>
-      {{range $reviews}}
-        <li>
-          <b>{{.Rating}}/5</b> {{.Comment}}
-        </li>
-      {{else}}
-        <li class="muted">No reviews yet</li>
-      {{end}}
-    </ul>
+  <label>Email</label>
+  <input name="email" type="email" required>
 
-    {{if .User}}
-      <h4>Leave a review</h4>
-      {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
-      <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">
-        <label>Rating</label>
-        <select name="rating" required>
-          <option value="5">5</option>
-          <option value="4">4</option>
-          <option value="3">3</option>
-          <option value="2">2</option>
-          <option value="1">1</option>
-        </select>
+  <label>Password</label>
+  <input name="password" type="password" required>
 
-        <label>Comment</label>
-        <input name="comment" maxlength="200">
+  <label>Role</label>
+  <select name="role">
+    <option value="customer">Customer</option>
+    <option value="partner">Partner</option>
+  </select>
 
-        <button type="submit">Submit review</button>
-      </form>
-    {{else}}
-      <p class="muted">Login to leave a review</p>
-    {{end}}
+  <button type="submit">Create account</button>
+</form>
 {{end}}

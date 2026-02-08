@@ -1,0 +1,21 @@
+{{define "title"}}Halal request{{end}}
+
+{{define "main"}}
+{{ $rest := index .Data "restaurant" }}
+<h2>Halal verification request</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" class="form">
+  <label>Restaurant</label>
+  <input value="{{ $rest.Name }}" disabled>
+
+  <label>Proof type</label>
+  <input name="proof_type" required>
+
+  <label>Proof URLs (comma separated)</label>
+  <input name="proof_urls" required>
+
+  <button type="submit">Submit request</button>
+</form>
+{{end}}

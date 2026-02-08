@@ -38,6 +38,9 @@ func main() {
 	restaurantStore := mongo.NewRestaurantStore(database)
 	menuStore := mongo.NewMenuItemStore(database)
 	reviewStore := mongo.NewReviewStore(database)
+	orderStore := mongo.NewOrderStore(database)
+	statusStore := mongo.NewOrderStatusHistoryStore(database)
+	halalStore := mongo.NewHalalVerificationStore(database)
 
 	application := &app.Application{
 		Logger:      logger,
@@ -47,6 +50,9 @@ func main() {
 		Restaurants: restaurantStore,
 		MenuItems:   menuStore,
 		Reviews:     reviewStore,
+		Orders:      orderStore,
+		OrderStatus: statusStore,
+		Halal:       halalStore,
 	}
 
 	r := handlers.Routes(application)

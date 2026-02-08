@@ -1,0 +1,41 @@
+{{define "title"}}Admin Reviews{{end}}
+
+{{define "main"}}
+  {{ $reviews := index .Data "reviews" }}
+  <h2>Review moderation</h2>
+
+  {{if $reviews}}
+    <ul class="list">
+      {{range $reviews}}
+        <li class="card">
+          <div><strong>Restaurant:</strong> {{.RestaurantID.Hex}}</div>
+          <div><strong>Rating:</strong> {{.Rating}}</div>
+          {{if .Comment}}
+            <div><strong>Comment:</strong> {{.Comment}}</div>
+          {{else}}
+            <div class="muted">No comment</div>
+          {{end}}
+          {{if .IsHidden}}
+            <div class="muted">Status: hidden</div>
+          {{else}}
+            <div class="muted">Status: visible</div>
+          {{end}}
+
+          <form method="POST" action="/admin/reviews/{{.ID.Hex}}/hide" class="form">
+            <label>Hide reason (optional)</label>
+            <input type="text" name="note">
+            <button type="submit">Hide</button>
+          </form>
+
+          <form method="POST" action="/admin/reviews/{{.ID.Hex}}/show" class="form">
+            <label>Show note (optional)</label>
+            <input type="text" name="note">
+            <button type="submit">Show</button>
+          </form>
+        </li>
+      {{end}}
+    </ul>
+  {{else}}
+    <p>No reviews found.</p>
+  {{end}}
+{{end}}
