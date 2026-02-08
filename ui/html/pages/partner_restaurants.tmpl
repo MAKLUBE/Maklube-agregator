@@ -1,0 +1,24 @@
+{{define "title"}}My restaurants{{end}}
+
+{{define "main"}}
+<h2>My restaurants</h2>
+
+{{if .Data}}
+  <ul class="list">
+    {{range .Data}}
+      <li class="card">
+        <div><strong>{{.Name}}</strong></div>
+        <div class="muted">{{.Address.AddressText}}, {{.Address.City}}</div>
+        <div class="actions">
+          <a href="/partner/restaurants/id/{{.ID.Hex}}/edit">Edit profile</a>
+          <a href="/partner/restaurants/id/{{.ID.Hex}}/menu">View menu</a>
+          <a href="/partner/restaurants/id/{{.ID.Hex}}/menu/new">Add menu item</a>
+          <a href="/partner/restaurants/id/{{.ID.Hex}}/halal">Halal request</a>
+        </div>
+      </li>
+    {{end}}
+  </ul>
+{{else}}
+  <p class="muted">No restaurants yet.</p>
+{{end}}
+{{end}}

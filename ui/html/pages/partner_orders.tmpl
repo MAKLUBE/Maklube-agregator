@@ -1,0 +1,41 @@
+{{define "title"}}Incoming orders{{end}}
+
+{{define "main"}}
+<h2>Incoming orders</h2>
+
+{{if .Data}}
+  {{range .Data}}
+    {{ $rest := index . "restaurant" }}
+    {{ $orders := index . "orders" }}
+    <h3>{{ $rest.Name }}</h3>
+    {{if $orders}}
+      <ul class="list">
+        {{range $orders}}
+          <li class="card">
+            <div><strong>Status:</strong> {{.OrderStatus}}</div>
+            <div><strong>Total:</strong> {{.Total}}</div>
+            <div class="muted">Delivery: {{.DeliveryType}}</div>
+            {{if .DeliveryAddr}}<div class="muted">Address: {{.DeliveryAddr}}</div>{{end}}
+            <div class="muted">Items: {{len .Items}}</div>
+            <form method="POST" action="/partner/orders/{{.ID.Hex}}/status" class="form">
+              <label>Update status</label>
+              <select name="status">
+                <option value="accepted">accepted</option>
+                <option value="cooking">cooking</option>
+                <option value="delivering">delivering</option>
+                <option value="completed">completed</option>
+                <option value="rejected">rejected</option>
+              </select>
+              <button type="submit">Save</button>
+            </form>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="muted">No orders yet.</p>
+    {{end}}
+  {{end}}
+{{else}}
+  <p class="muted">No orders yet.</p>
+{{end}}
+{{end}}

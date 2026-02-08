@@ -40,6 +40,42 @@
   </section>
 
   {{if .User}}
+    <section class="section">
+      <h4>Place an order</h4>
+      {{with .Form.order_error}}<p class="error">{{.}}</p>{{end}}
+      <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/orders" class="form">
+        <label>Menu item</label>
+        <select name="menu_item_id" required>
+          {{range $menu}}
+            <option value="{{.ID.Hex}}">{{.Name}} — {{.Price}}</option>
+          {{end}}
+        </select>
+
+        <label>Quantity</label>
+        <input name="qty" value="1" required>
+
+        <label>Delivery type</label>
+        <select name="delivery_type">
+          <option value="pickup">pickup</option>
+          <option value="delivery">delivery</option>
+        </select>
+
+        <label>Delivery address</label>
+        <input name="delivery_address">
+
+        <label>Payment type</label>
+        <select name="payment_type">
+          <option value="cash">cash</option>
+          <option value="card">card</option>
+        </select>
+
+        <label>Comment</label>
+        <input name="customer_comment">
+
+        <button type="submit">Place order</button>
+      </form>
+    </section>
+
     <h4>Leave a review</h4>
     {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
     <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">

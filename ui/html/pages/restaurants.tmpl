@@ -1,10 +1,19 @@
 {{define "title"}}Restaurants{{end}}
 
 {{define "main"}}
+{{ $items := index .Data "items" }}
+{{ $status := index .Data "status" }}
 <h2>Restaurants</h2>
 
+<div class="filters">
+  <a href="/restaurants" class="{{if eq $status ""}}active{{end}}">All</a>
+  <a href="/restaurants?status=verified" class="{{if eq $status "verified"}}active{{end}}">Verified</a>
+  <a href="/restaurants?status=pending" class="{{if eq $status "pending"}}active{{end}}">Pending</a>
+  <a href="/restaurants?status=rejected" class="{{if eq $status "rejected"}}active{{end}}">Rejected</a>
+</div>
+
 <ul class="list">
-  {{range .Data}}
+  {{range $items}}
     <li class="card">
       <a href="/restaurants/{{.ID.Hex}}">{{.Name}}</a>
       <span class="muted">— halal: {{.HalalStatus}}</span>

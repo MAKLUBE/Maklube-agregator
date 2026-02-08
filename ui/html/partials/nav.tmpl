@@ -5,19 +5,26 @@
 
   <div class="nav-right">
     {{if .User}}
-      <span class="muted">Hi, {{.User.Username}}: You are: {{.User.Role}}</span>
+        <span class="muted">Hi, {{.User.Username}}: You are: {{.User.Role}}</span>
+            <a href="/orders">My orders</a>
+
             {{if eq .User.Role "partner"}}
             <a href="/partner/restaurants/new">Create restaurant</a>
+            <a href="/partner/restaurants">My restaurants</a>
             {{end}}
+
             {{if eq .User.Role "admin"}}
+            <a href="/admin/halal">Halal requests</a>
             <a href="/admin/reviews">Moderate reviews</a>
+
             {{end}}
-      <form method="POST" action="/logout" style="display:inline;">
-        <button type="submit">Logout</button>
+                  
+        <form method="POST" action="/logout" style="display:inline;">
+            <button type="submit">Logout</button>
       </form>
     {{else}}
-      <a href="/login">Login</a>
-      <a href="/register">Register</a>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
     {{end}}
   </div>
 </nav>

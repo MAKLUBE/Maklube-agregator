@@ -19,7 +19,7 @@ body {
     display: flex;
     gap: 16px;
     padding: 12px 24px;
-    background: #111;
+    background: #F08080;
     color: #fff;
     align-items: center;
 }
@@ -62,12 +62,12 @@ h2, h3, h4 {
 }
 
 .error {
-    color: #ff0023;
+    color: #b00020;
 }
 
 button {
-    padding:8px 12px;
-    cursor:pointer;
+    padding: 8px 12px;
+    cursor: pointer;
     border: 1px solid #ddd;
     background: #f2f2f2;
     border-radius: 6px;
@@ -103,4 +103,39 @@ ul {
 
 .section {
     margin: 16px 0 24px;
+}
+
+.filters {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    flex-wrap: wrap;
+}
+
+.filters a {
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    color: #222;
+    background: #fff;
+}
+
+.filters a.active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin: 8px 0 0;
+    flex-wrap: wrap;
+}
+
+.actions a {
+    text-decoration: none;
+    color: #111;
+    font-weight: 600;
 }

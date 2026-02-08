@@ -1,0 +1,35 @@
+{{define "title"}}Edit restaurant{{end}}
+
+{{define "main"}}
+<h2>Edit restaurant</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" action="/partner/restaurants/id/{{.Data.ID.Hex}}/edit" class="form">
+  <label>Name</label>
+  <input name="name" value="{{.Data.Name}}" required>
+
+  <label>Description</label>
+  <input name="description" value="{{.Data.Description}}">
+
+  <label>Phone</label>
+  <input name="phone" value="{{.Data.Phone}}">
+
+  <label>Address</label>
+  <input name="address_text" value="{{.Data.Address.AddressText}}" required>
+
+  <label>City</label>
+  <input name="city" value="{{.Data.Address.City}}" required>
+
+  <label>District</label>
+  <input name="district" value="{{.Data.Address.District}}">
+
+  <label>Map URL</label>
+  <input name="map_url" value="{{.Data.Address.MapURL}}">
+
+  <label>Instagram</label>
+  <input name="instagram" value="{{.Data.Instagram}}">
+
+  <button type="submit">Save</button>
+</form>
+{{end}}

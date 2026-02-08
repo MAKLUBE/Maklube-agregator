@@ -15,4 +15,5 @@ type HalalVerification struct {
 	ProofURLs    []string           `bson:"proof_urls,omitempty" json:"proof_urls,omitempty"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	ReviewedAt   time.Time          `bson:"reviewed_at,omitempty" json:"reviewed_at,omitempty"`
+	ReviewNote   string             `bson:"review_note,omitempty" json:"review_note,omitempty"`
 }

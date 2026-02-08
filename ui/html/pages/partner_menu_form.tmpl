@@ -1,0 +1,46 @@
+{{define "title"}}Menu item{{end}}
+
+{{define "main"}}
+{{ $rest := index .Data "restaurant" }}
+{{ $item := index .Data "item" }}
+
+<h2>Menu item</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" class="form">
+  <label>Name</label>
+  <input name="name" value="{{if $item}}{{ $item.Name }}{{end}}" required>
+
+  <label>Description</label>
+  <input name="description" value="{{if $item}}{{ $item.Description }}{{end}}">
+
+  <label>Category</label>
+  <input name="category" value="{{if $item}}{{ $item.Category }}{{end}}">
+
+  <label>Price</label>
+  <input name="price" value="{{if $item}}{{ $item.Price }}{{end}}" required>
+
+  <label>Photo URL</label>
+  <input name="photo_url" value="{{if $item}}{{ $item.PhotoURL }}{{end}}">
+
+  <label>Prep time (min)</label>
+  <input name="prep_time_min" value="{{if $item}}{{ $item.PrepTimeMin }}{{end}}">
+
+  <label>
+    <input type="checkbox" name="is_available"
+    {{if $item}}
+
+    {{if $item.IsAvailable}}checked
+    {{end}}
+
+    {{else}}
+    checked{{end}}>
+    Available
+  </label>
+
+  {{if $rest}}
+    <button type="submit">Save item</button>
+  {{end}}
+</form>
+{{end}}

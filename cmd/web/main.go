@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -38,6 +39,9 @@ func main() {
 	restaurantStore := mongo.NewRestaurantStore(database)
 	menuStore := mongo.NewMenuItemStore(database)
 	reviewStore := mongo.NewReviewStore(database)
+	orderStore := mongo.NewOrderStore(database)
+	statusStore := mongo.NewOrderStatusHistoryStore(database)
+	halalStore := mongo.NewHalalVerificationStore(database)
 
 	application := &app.Application{
 		Logger:      logger,
@@ -47,6 +51,9 @@ func main() {
 		Restaurants: restaurantStore,
 		MenuItems:   menuStore,
 		Reviews:     reviewStore,
+		Orders:      orderStore,
+		OrderStatus: statusStore,
+		Halal:       halalStore,
 	}
 
 	r := handlers.Routes(application)
@@ -64,6 +71,22 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	go func() {
+		for range ticker.C {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := application.Sessions.DeleteExpired(ctx, time.Now().UTC())
+			cancel()
+
+			if err != nil {
+				application.Logger.Println("background: delete expired sessions error:", err)
+			} else {
+				application.Logger.Println("background: expired sessions cleaned")
+			}
+		}
+	}()
 	err = srv.ListenAndServe()
 	logger.Fatal(err)
 }

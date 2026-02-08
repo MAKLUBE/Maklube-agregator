@@ -6,13 +6,14 @@ import (
 )
 
 type Application struct {
-	Logger *log.Logger
-
-	Templates map[string]*template.Template
-
+	Logger      *log.Logger
+	Templates   map[string]*template.Template
 	Users       UserStore
 	Sessions    SessionStore
 	Restaurants RestaurantStore
 	MenuItems   MenuItemStore
 	Reviews     ReviewStore
+	Orders      OrderStore
+	OrderStatus OrderStatusHistoryStore
+	Halal       HalalVerificationStore
 }
