@@ -13,7 +13,6 @@ import (
 )
 
 func (h *Handler) partnerIncomingOrders(w http.ResponseWriter, r *http.Request) {
-
 	u := h.currentUser(r)
 	if u == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -157,6 +156,158 @@ func (h *Handler) partnerMenuNewForm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) partnerMenuNewPost(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	item, err := h.menuItemFromForm(r, rest.ID)
+	if err != nil {
+		h.render(w, r, "partner_menu_form.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest},
+			Form: map[string]string{"error": "Fill required fields"},
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.App.MenuItems.Insert(ctx, item); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
+}
+
+func (h *Handler) partnerMenuList(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	items, err := h.App.MenuItems.ListByRestaurant(ctx, rest.ID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	h.render(w, r, "partner_menu_list.tmpl", &templateData{
+		User: u,
+		Data: map[string]any{
+			"restaurant": rest,
+			"items":      items,
+		},
+	})
+}
+
+func (h *Handler) partnerMenuEditForm(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	item, err := h.getPartnerMenuItem(r, rest.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	h.render(w, r, "partner_menu_form.tmpl", &templateData{
+		User: u,
+		Data: map[string]any{
+			"restaurant": rest,
+			"item":       item,
+		},
+	})
+}
+
+func (h *Handler) partnerMenuEditPost(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	item, err := h.getPartnerMenuItem(r, rest.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	updated, err := h.menuItemFromForm(r, rest.ID)
+	if err != nil {
+		h.render(w, r, "partner_menu_form.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest, "item": item},
+			Form: map[string]string{"error": "Fill required fields"},
+		})
+		return
+	}
+
+	item.Name = updated.Name
+	item.Description = updated.Description
+	item.Category = updated.Category
+	item.Price = updated.Price
+	item.PhotoURL = updated.PhotoURL
+	item.PrepTimeMin = updated.PrepTimeMin
+	item.IsAvailable = updated.IsAvailable
+	item.UpdatedAt = time.Now().UTC()
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.App.MenuItems.Update(ctx, item); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
+}
+
 func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request) {
 	u := h.currentUser(r)
 	if u == nil {
@@ -245,165 +396,15 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
 }
 
-func (h *Handler) partnerMenuList(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	items, err := h.App.MenuItems.ListByRestaurant(ctx, rest.ID)
-	if err != nil {
-		h.serverError(w, err)
-		return
-	}
-
-	h.render(w, r, "partner_menu_list.tmpl", &templateData{
-		User: u,
-		Data: map[string]any{
-			"restaurant": rest,
-			"items":      items,
-		},
-	})
-}
-
-func (h *Handler) partnerMenuNewPost(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		h.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	item, err := h.menuItemFromForm(r, rest.ID)
-	if err != nil {
-		h.render(w, r, "partner_menu_form.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Fill required fields"},
-		})
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	if err := h.App.MenuItems.Insert(ctx, item); err != nil {
-		h.serverError(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
-}
-
-func (h *Handler) partnerMenuEditForm(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	item, err := h.getPartnerMenuItem(r, rest.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	h.render(w, r, "partner_menu_form.tmpl", &templateData{
-		User: u,
-		Data: map[string]any{
-			"restaurant": rest,
-			"item":       item,
-		},
-	})
-}
-
-func (h *Handler) partnerMenuEditPost(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	item, err := h.getPartnerMenuItem(r, rest.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		h.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	updated, err := h.menuItemFromForm(r, rest.ID)
-	if err != nil {
-		h.render(w, r, "partner_menu_form.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest, "item": item},
-			Form: map[string]string{"error": "Fill required fields"},
-		})
-		return
-	}
-
-	item.Name = updated.Name
-	item.Description = updated.Description
-	item.Category = updated.Category
-	item.Price = updated.Price
-	item.PhotoURL = updated.PhotoURL
-	item.PrepTimeMin = updated.PrepTimeMin
-	item.IsAvailable = updated.IsAvailable
-	item.UpdatedAt = time.Now().UTC()
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	if err := h.App.MenuItems.Update(ctx, item); err != nil {
-		h.serverError(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
-}
-
 func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.ObjectID) (*models.Restaurant, error) {
 	parts := splitPath(r.URL.Path)
-	if len(parts) < 3 {
+
+	// expected: /partner/restaurants/id/<restaurantHex>/...
+	if len(parts) < 4 || parts[2] != "id" {
 		return nil, errors.New("invalid path")
 	}
 
-	oid, err := primitive.ObjectIDFromHex(parts[2])
+	oid, err := primitive.ObjectIDFromHex(parts[3])
 	if err != nil {
 		return nil, err
 	}
@@ -423,11 +424,13 @@ func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.Object
 
 func (h *Handler) getPartnerMenuItem(r *http.Request, restaurantID primitive.ObjectID) (*models.MenuItem, error) {
 	parts := splitPath(r.URL.Path)
-	if len(parts) < 5 {
+
+	// expected: /partner/restaurants/id/<restHex>/menu-items/<itemHex>/edit
+	if len(parts) < 6 || parts[2] != "id" {
 		return nil, errors.New("invalid path")
 	}
 
-	itemID, err := primitive.ObjectIDFromHex(parts[4])
+	itemID, err := primitive.ObjectIDFromHex(parts[5])
 	if err != nil {
 		return nil, err
 	}

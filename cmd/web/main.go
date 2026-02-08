@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -70,6 +71,22 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	go func() {
+		for range ticker.C {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := application.Sessions.DeleteExpired(ctx, time.Now().UTC())
+			cancel()
+
+			if err != nil {
+				application.Logger.Println("background: delete expired sessions error:", err)
+			} else {
+				application.Logger.Println("background: expired sessions cleaned")
+			}
+		}
+	}()
 	err = srv.ListenAndServe()
 	logger.Fatal(err)
 }

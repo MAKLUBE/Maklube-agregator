@@ -1,26 +1,98 @@
-{{define "title"}}Register{{end}}
+{{define "title"}}Restaurant{{end}}
 
 {{define "main"}}
-<h2>Register</h2>
+  {{ $r := index .Data "restaurant" }}
+  {{ $menu := index .Data "menu" }}
+  {{ $reviews := index .Data "reviews" }}
 
-{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+  <section class="section card">
+    <h2>{{ $r.Name }}</h2>
+    <p class="muted">{{ $r.Description }}</p>
+    <p>Halal: <b>{{ $r.HalalStatus }}</b></p>
+    {{with $r.Address.MapURL}}
+      <p><a href="{{.}}" target="_blank">Open in 2GIS</a></p>
+    {{end}}
+  </section>
 
-<form method="POST" action="/register" class="form">
-  <label>Username</label>
-  <input name="username" required>
+  <section class="section">
+    <h3>Menu</h3>
+    <ul class="list">
+      {{range $menu}}
+        <li class="card">{{.Name}} — {{.Price}}</li>
+      {{else}}
+        <li class="card muted">No menu items</li>
+      {{end}}
+    </ul>
+  </section>
 
-  <label>Email</label>
-  <input name="email" type="email" required>
+  <section class="section">
+    <h3>Reviews</h3>
+    <ul class="list">
+      {{range $reviews}}
+        <li class="card">
+          <b>{{.Rating}}/5</b> {{.Comment}}
+        </li>
+      {{else}}
+        <li class="card muted">No reviews yet</li>
+      {{end}}
+    </ul>
+  </section>
 
-  <label>Password</label>
-  <input name="password" type="password" required>
+  {{if .User}}
+    <section class="section">
+      <h4>Place an order</h4>
+      {{with .Form.order_error}}<p class="error">{{.}}</p>{{end}}
+      <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/orders" class="form">
+        <label>Menu item</label>
+        <select name="menu_item_id" required>
+          {{range $menu}}
+            <option value="{{.ID.Hex}}">{{.Name}} — {{.Price}}</option>
+          {{end}}
+        </select>
 
-  <label>Role</label>
-  <select name="role">
-    <option value="customer">Customer</option>
-    <option value="partner">Partner</option>
-  </select>
+        <label>Quantity</label>
+        <input name="qty" value="1" required>
 
-  <button type="submit">Create account</button>
-</form>
+        <label>Delivery type</label>
+        <select name="delivery_type">
+          <option value="pickup">pickup</option>
+          <option value="delivery">delivery</option>
+        </select>
+
+        <label>Delivery address</label>
+        <input name="delivery_address">
+
+        <label>Payment type</label>
+        <select name="payment_type">
+          <option value="cash">cash</option>
+          <option value="card">card</option>
+        </select>
+
+        <label>Comment</label>
+        <input name="customer_comment">
+
+        <button type="submit">Place order</button>
+      </form>
+    </section>
+
+    <h4>Leave a review</h4>
+    {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+    <form method="POST" action="/restaurants/{{ $r.ID.Hex }}/reviews" class="form">
+      <label>Rating</label>
+      <select name="rating" required>
+        <option value="5">5</option>
+        <option value="4">4</option>
+        <option value="3">3</option>
+        <option value="2">2</option>
+        <option value="1">1</option>
+      </select>
+
+      <label>Comment</label>
+      <input name="comment" maxlength="200">
+
+      <button type="submit">Submit review</button>
+    </form>
+  {{else}}
+    <p class="muted">Login to leave a review</p>
+  {{end}}
 {{end}}

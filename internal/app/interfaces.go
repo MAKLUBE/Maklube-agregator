@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/MAKLUBE/AP1_Final_Project/internal/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +19,7 @@ type SessionStore interface {
 	Create(ctx context.Context, s *models.Session) error
 	FindByToken(ctx context.Context, token string) (*models.Session, error)
 	Delete(ctx context.Context, token string) error
+	DeleteExpired(ctx context.Context, now time.Time) error
 }
 
 type RestaurantStore interface {

@@ -45,3 +45,10 @@ func (s *SessionStore) Delete(ctx context.Context, token string) error {
 	_, err := s.col.DeleteOne(ctx, bson.M{"token": token})
 	return err
 }
+
+func (s *SessionStore) DeleteExpired(ctx context.Context, now time.Time) error {
+	_, err := s.col.DeleteMany(ctx, bson.M{
+		"expires_at": bson.M{"$lte": now},
+	})
+	return err
+}
