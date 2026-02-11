@@ -198,6 +198,7 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 	mainProofType := strings.TrimSpace(r.PostForm.Get("main_proof_type"))
 	mainProofURLsRaw := strings.TrimSpace(r.PostForm.Get("main_proof_urls"))
 	ingredientProofsRaw := strings.TrimSpace(r.PostForm.Get("ingredient_proofs"))
+
 	if mainProofType == "" || mainProofURLsRaw == "" {
 		h.render(w, r, "partner_halal_request.tmpl", &templateData{
 			User: u,
@@ -549,7 +550,6 @@ func (h *Handler) partnerOrderUpdateStatus(w http.ResponseWriter, r *http.Reques
 		h.clientError(w, http.StatusBadRequest)
 		return
 	}
-
 	status := strings.TrimSpace(r.PostForm.Get("status"))
 	if status == "" {
 		http.Redirect(w, r, "/partner/orders", http.StatusSeeOther)
@@ -558,7 +558,6 @@ func (h *Handler) partnerOrderUpdateStatus(w http.ResponseWriter, r *http.Reques
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-
 	order, err := h.App.Orders.FindByID(ctx, orderID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)

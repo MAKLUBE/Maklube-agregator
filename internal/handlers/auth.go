@@ -26,7 +26,7 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(r.PostForm.Get("username"))
 	email := strings.TrimSpace(strings.ToLower(r.PostForm.Get("email")))
 	password := r.PostForm.Get("password")
-	role := strings.TrimSpace(r.PostForm.Get("role")) // customer/partner
+	role := strings.TrimSpace(r.PostForm.Get("role"))
 
 	if username == "" || email == "" || password == "" {
 		h.render(w, r, "register.tmpl", &templateData{
@@ -56,7 +56,6 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	// check exists (simple)
 	if _, err := h.App.Users.FindByEmail(ctx, email); err == nil {
 		h.render(w, r, "register.tmpl", &templateData{
 			Form: map[string]string{"error": "Email already used"},

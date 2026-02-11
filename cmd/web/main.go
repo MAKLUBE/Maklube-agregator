@@ -91,11 +91,9 @@ func main() {
 			case <-ticker.C:
 				cleanupCount++
 				logger.Printf("background: cleanup #%d started", cleanupCount)
-
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				err := application.Sessions.DeleteExpired(ctx, time.Now().UTC())
 				cancel()
-
 				if err != nil {
 					logger.Printf("background: cleanup #%d failed: %v", cleanupCount, err)
 				} else {
@@ -103,7 +101,7 @@ func main() {
 				}
 
 			case <-shutdown:
-				logger.Println("background: received shutdown signal, stopping cleanup worker")
+				logger.Println("background: received shutdown signal, stop worker")
 				return
 			}
 		}
