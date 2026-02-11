@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/MAKLUBE/AP1_Final_Project/internal/app"
@@ -71,24 +73,70 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	done := make(chan struct{})
+
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	go func() {
-		for range ticker.C {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			err := application.Sessions.DeleteExpired(ctx, time.Now().UTC())
-			cancel()
+		defer close(done)
+		cleanupCount := 0
+		logger.Println("background: session cleanup worker started")
 
-			if err != nil {
-				application.Logger.Println("background: delete expired sessions error:", err)
-			} else {
-				application.Logger.Println("background: expired sessions cleaned")
+		for {
+			select {
+			case <-ticker.C:
+				cleanupCount++
+				logger.Printf("background: cleanup #%d started", cleanupCount)
+
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				err := application.Sessions.DeleteExpired(ctx, time.Now().UTC())
+				cancel()
+
+				if err != nil {
+					logger.Printf("background: cleanup #%d failed: %v", cleanupCount, err)
+				} else {
+					logger.Printf("background: cleanup #%d completed successfully", cleanupCount)
+				}
+
+			case <-shutdown:
+				logger.Println("background: received shutdown signal, stopping cleanup worker")
+				return
 			}
 		}
 	}()
-	err = srv.ListenAndServe()
-	logger.Fatal(err)
+
+	serverErrors := make(chan error, 1)
+	go func() {
+		logger.Println("server: HTTP server starting")
+		serverErrors <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErrors:
+		logger.Fatalf("server: error starting server: %v", err)
+
+	case sig := <-shutdown:
+		logger.Printf("server: received shutdown signal: %v", sig)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		logger.Println("server: shutting down HTTP server")
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Printf("server: error during shutdown: %v", err)
+			_ = srv.Close()
+		}
+
+		logger.Println("server: waiting for background worker to finish")
+		<-done
+		logger.Println("server: background worker stopped")
+
+		logger.Println("server: shutdown complete")
+	}
 }
 
 func getenv(key, fallback string) string {

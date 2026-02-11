@@ -65,8 +65,30 @@
         <label>Payment type</label>
         <select name="payment_type">
           <option value="cash">cash</option>
-          <option value="card">card</option>
+          <option value="kaspi_transfer">Kaspi Transfer</option>
         </select>
+
+        <div id="kaspi_hint" class="muted" style="display:none; margin-top:8px;">
+          {{if $r.KaspiNumber}}
+            Kaspi transfer number: <b>{{$r.KaspiNumber}}</b>
+          {{else}}
+            Kaspi transfer: restaurant did not provide Kaspi number yet.
+          {{end}}
+        </div>
+
+        <script>
+          (function () {
+            const sel = document.getElementById('payment_type');
+            const hint = document.getElementById('kaspi_hint');
+            if (!sel || !hint) return;
+            function update() {
+              hint.style.display = (sel.value === 'kaspi_transfer') ? 'block' : 'none';
+            }
+
+            sel.addEventListener('change', update);
+            update();
+          })();
+        </script>
 
         <label>Comment</label>
         <input name="customer_comment">

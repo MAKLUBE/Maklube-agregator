@@ -21,7 +21,6 @@ func (h *Handler) partnerIncomingOrders(w http.ResponseWriter, r *http.Request) 
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-
 	rests, err := h.App.Restaurants.ListByOwner(ctx, u.ID)
 	if err != nil {
 		h.serverError(w, err)
@@ -109,6 +108,7 @@ func (h *Handler) partnerRestaurantEditPost(w http.ResponseWriter, r *http.Reque
 	rest.Name = strings.TrimSpace(r.PostForm.Get("name"))
 	rest.Description = strings.TrimSpace(r.PostForm.Get("description"))
 	rest.Phone = strings.TrimSpace(r.PostForm.Get("phone"))
+	rest.KaspiNumber = strings.TrimSpace(r.PostForm.Get("kaspi_number"))
 	rest.Address.AddressText = strings.TrimSpace(r.PostForm.Get("address_text"))
 	rest.Address.City = strings.TrimSpace(r.PostForm.Get("city"))
 	rest.Address.District = strings.TrimSpace(r.PostForm.Get("district"))
@@ -399,7 +399,6 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.ObjectID) (*models.Restaurant, error) {
 	parts := splitPath(r.URL.Path)
 
-	// expected: /partner/restaurants/id/<restaurantHex>/...
 	if len(parts) < 4 || parts[2] != "id" {
 		return nil, errors.New("invalid path")
 	}
@@ -425,7 +424,6 @@ func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.Object
 func (h *Handler) getPartnerMenuItem(r *http.Request, restaurantID primitive.ObjectID) (*models.MenuItem, error) {
 	parts := splitPath(r.URL.Path)
 
-	// expected: /partner/restaurants/id/<restHex>/menu-items/<itemHex>/edit
 	if len(parts) < 6 || parts[2] != "id" {
 		return nil, errors.New("invalid path")
 	}
@@ -520,7 +518,6 @@ func (h *Handler) partnerOrderUpdateStatus(w http.ResponseWriter, r *http.Reques
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-
 	order, err := h.App.Orders.FindByID(ctx, orderID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)

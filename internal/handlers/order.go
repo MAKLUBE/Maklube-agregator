@@ -63,7 +63,6 @@ func (h *Handler) orderCreate(w http.ResponseWriter, r *http.Request) {
 	deliveryAddr := strings.TrimSpace(r.PostForm.Get("delivery_address"))
 	paymentType := strings.TrimSpace(r.PostForm.Get("payment_type"))
 	customerNote := strings.TrimSpace(r.PostForm.Get("customer_comment"))
-
 	if menuIDHex == "" || qtyStr == "" {
 		h.renderOrderFormError(w, r, restID, u, "Select item and quantity")
 		return
@@ -83,6 +82,17 @@ func (h *Handler) orderCreate(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
+
+	rest, err := h.App.Restaurants.FindByID(ctx, restID)
+	if err != nil {
+		h.renderOrderFormError(w, r, restID, u, "Restaurant not found")
+		return
+	}
+
+	if paymentType == "kaspi_transfer" && strings.TrimSpace(rest.KaspiNumber) == "" {
+		h.renderOrderFormError(w, r, restID, u, "Kaspi transfer is not available for this")
+		return
+	}
 
 	menu, err := h.App.MenuItems.FindByID(ctx, menuID)
 	if err != nil || menu.RestaurantID != restID {
