@@ -13,7 +13,6 @@ type MenuItem struct {
 	Description  string             `bson:"description,omitempty" json:"description,omitempty"`
 	Category     string             `bson:"category,omitempty" json:"category,omitempty"`
 	Price        float64            `bson:"price" json:"price"`
-	PhotoURL     string             `bson:"photo_url,omitempty" json:"photo_url,omitempty"`
 	PrepTimeMin  int                `bson:"prep_time_min,omitempty" json:"prep_time_min,omitempty"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
