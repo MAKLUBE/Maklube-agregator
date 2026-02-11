@@ -107,10 +107,19 @@ func (h *Handler) loginPost(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, err)
 		return
 	}
+
+	sessDuration := 7 * 24 * time.Hour
+
+	if u.Role == models.RolePartner {
+		sessDuration = 30 * 24 * time.Hour
+	} else if u.Role == models.RoleAdmin {
+		sessDuration = 1 * time.Hour
+	}
+
 	sess := &models.Session{
 		Token:     token,
 		UserID:    u.ID,
-		ExpiresAt: time.Now().UTC().Add(7 * 24 * time.Hour),
+		ExpiresAt: time.Now().UTC().Add(sessDuration),
 	}
 	if err := h.App.Sessions.Create(ctx, sess); err != nil {
 		h.serverError(w, err)
@@ -156,7 +165,6 @@ func newToken(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// reads from context
 func (h *Handler) currentUser(r *http.Request) *models.User {
 	uAny, ok := app.ContextGetUser(r.Context())
 	if !ok || uAny == nil {

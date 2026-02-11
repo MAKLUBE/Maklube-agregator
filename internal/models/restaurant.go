@@ -13,8 +13,8 @@ type Restaurant struct {
 	Phone         string             `bson:"phone,omitempty" json:"phone,omitempty"`
 	HalalStatus   string             `bson:"halal_status" json:"halal_status"`
 	RatingAverage float64            `bson:"rating_average" json:"rating_average"`
-
-	Address struct {
+	KaspiNumber   string             `bson:"kaspi_number,omitempty" json:"kaspi_number"`
+	Address       struct {
 		AddressText string `bson:"address_text" json:"address_text"`
 		City        string `bson:"city" json:"city"`
 		District    string `bson:"district,omitempty" json:"district,omitempty"`
