@@ -1,35 +1,52 @@
-{{define "title"}}Halal requests{{end}}
+{{define "title"}}Admin - Halal Requests{{end}}
 
 {{define "main"}}
-<h2>Halal verification requests</h2>
+<h2>Halal Verification Requests</h2>
 
 {{if .Data}}
-  <ul class="list">
-    {{range .Data}}
-      <li class="card">
-        <div><strong>Restaurant:</strong> {{.Data.Name}}</div>
-        <div class="muted">Proof type: {{.ProofType}}</div>
-        {{if .ProofURLs}}
-          <div class="muted">Proof URLs:</div>
-          <ul>
-            {{range .ProofURLs}}
-              <li><a href="{{.}}" target="_blank">{{.}}</a></li>
-            {{end}}
-          </ul>
+  {{range .Data}}
+    <div class="verification-card">
+      <div class="card-header">
+        <div>
+          <h3>Restaurant ID: {{.RestaurantID.Hex}}</h3>
+          <span class="status status-{{.Status}}">{{.Status}}</span>
+        </div>
+        <small class="muted">Requested: {{.CreatedAt.Format "2006-01-02 15:04"}}</small>
+      </div>
+
+      {{if .IngredientProofs}}
+      <div class="products-list">
+        <h4>Products / Ingredients:</h4>
+        {{range $idx, $proof := .IngredientProofs}}
+          <div class="product-proof">
+            <div class="product-info">
+              <strong>Product {{add $idx 1}}: {{$proof.Ingredient}}</strong>
+              {{if $proof.ProofType}}
+                <span class="badge">{{$proof.ProofType}}</span>
+              {{end}}
+            </div>
+            <div class="proof-links">
+              {{range $proof.ProofURLs}}
+                <a href="{{.}}" target="_blank" class="proof-link">View Proof →</a>
+              {{end}}
+            </div>
+          </div>
         {{end}}
-        <form method="POST" action="/admin/halal/{{.ID.Hex}}/approve" class="form">
-          <label>Note (optional)</label>
-          <input name="note">
-          <button type="submit">Approve</button>
-        </form>
-        <form method="POST" action="/admin/halal/{{.ID.Hex}}/reject" class="form">
-          <label>Reason</label>
-          <input name="note">
-          <button type="submit">Reject</button>
-        </form>
-      </li>
-    {{end}}
-  </ul>
+      </div>
+      {{end}}
+
+      {{if eq .Status "pending"}}
+        <div class="actions">
+          <form method="POST" action="/admin/halal/{{.ID.Hex}}/approve" style="display: inline;">
+            <button type="submit" class="btn-approve">Approve</button>
+          </form>
+          <form method="POST" action="/admin/halal/{{.ID.Hex}}/reject" style="display: inline;">
+            <button type="submit" class="btn-reject">Reject</button>
+          </form>
+        </div>
+      {{end}}
+    </div>
+  {{end}}
 {{else}}
   <p class="muted">No pending requests.</p>
 {{end}}

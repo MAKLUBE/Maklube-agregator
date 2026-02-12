@@ -19,9 +19,31 @@ func (h *Handler) adminHalalRequests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data := make([]map[string]any, 0, len(items))
+
+	for _, item := range items {
+		rest, err := h.App.Restaurants.FindByID(ctx, item.RestaurantID)
+		var restaurantName string
+		if err == nil {
+			restaurantName = rest.Name
+		}
+
+		data = append(data, map[string]any{
+			"ID":               item.ID,
+			"RestaurantID":     item.RestaurantID,
+			"RestaurantName":   restaurantName,
+			"RequestedBy":      item.RequestedBy,
+			"Status":           item.Status,
+			"IngredientProofs": item.IngredientProofs,
+			"CreatedAt":        item.CreatedAt,
+			"ReviewedAt":       item.ReviewedAt,
+			"ReviewNote":       item.ReviewNote,
+		})
+	}
+
 	h.render(w, r, "admin_halal.tmpl", &templateData{
 		User: h.currentUser(r),
-		Data: items,
+		Data: data,
 	})
 }
 
