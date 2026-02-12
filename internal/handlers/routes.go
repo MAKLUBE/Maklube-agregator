@@ -13,9 +13,14 @@ func Routes(a *app.Application) http.Handler {
 	mw := middleware.New(a)
 	router := httprouter.New()
 	h := &Handler{App: a}
+
 	router.HandlerFunc("GET", "/", h.home)
+
 	router.HandlerFunc("GET", "/register", h.registerForm)
 	router.HandlerFunc("POST", "/register", h.registerPost)
+
+	router.HandlerFunc("GET", "/verify", h.verifyForm)
+	router.HandlerFunc("POST", "/verify", h.verifyPost)
 
 	router.HandlerFunc("GET", "/login", h.loginForm)
 	router.HandlerFunc("POST", "/login", h.loginPost)

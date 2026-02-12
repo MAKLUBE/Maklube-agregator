@@ -1,0 +1,22 @@
+{{define "title"}}Verify Email{{end}}
+{{define "main"}}
+<h2>Verify your email</h2>
+
+{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+
+<form method="POST" action="/verify" class="form">
+  <label>Email</label>
+  <input name="email" type="email" value="{{.Form.email}}" required>
+
+  <label>Verification code</label>
+  <input name="code" required placeholder="6-digit code">
+
+  <button type="submit">Verify</button>
+</form>
+
+<p>After verification you can login.</p>
+<p style="color: #666; margin-top: 10px;">
+If you didn’t receive the email, please check your Spam folder.
+</p>
+
+{{end}}

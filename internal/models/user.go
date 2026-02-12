@@ -15,11 +15,14 @@ const (
 )
 
 type User struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Role         UserRole           `bson:"role" json:"role"`
-	Username     string             `bson:"username" json:"username"`
-	Email        string             `bson:"email" json:"email"`
-	Phone        string             `bson:"phone,omitempty" json:"phone,omitempty"`
-	PasswordHash []byte             `bson:"password_hash" json:"-"`
-	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
+	ID                    primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Role                  UserRole           `bson:"role" json:"role"`
+	Username              string             `bson:"username" json:"username"`
+	Email                 string             `bson:"email" json:"email"`
+	Phone                 string             `bson:"phone,omitempty" json:"phone,omitempty"`
+	PasswordHash          []byte             `bson:"password_hash" json:"-"`
+	CreatedAt             time.Time          `bson:"created_at" json:"created_at"`
+	Verified              bool               `bson:"verified" json:"verified"`
+	VerificationCode      string             `bson:"verification_code,omitempty" json:"-"`
+	VerificationExpiresAt time.Time          `bson:"verification_expires_at,omitempty" json:"-"`
 }

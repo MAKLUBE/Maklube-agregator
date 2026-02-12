@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -56,7 +58,6 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	// check exists (simple)
 	if _, err := h.App.Users.FindByEmail(ctx, email); err == nil {
 		h.render(w, r, "register.tmpl", &templateData{
 			Form: map[string]string{"error": "Email already used"},
@@ -69,7 +70,28 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	code, err := new6DigitCode()
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	expires := time.Now().UTC().Add(10 * time.Minute)
+
+	if err := h.App.Users.SetVerification(ctx, u.ID, code, expires); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	subject := "Makluber email verification code"
+	body := "Your verification code is: " + code + "\n\nIt expires in 10 minutes."
+
+	if err := h.App.Mailer.Send(u.Email, subject, body); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/verify?email="+url.QueryEscape(u.Email), http.StatusSeeOther)
 }
 
 func (h *Handler) loginForm(w http.ResponseWriter, r *http.Request) {
@@ -102,6 +124,14 @@ func (h *Handler) loginPost(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	if !u.Verified {
+		h.render(w, r, "login.tmpl", &templateData{
+			Form: map[string]string{"error": "Please verify your email before login"},
+		})
+		return
+	}
+
 	token, err := newToken(32)
 	if err != nil {
 		h.serverError(w, err)
@@ -156,6 +186,7 @@ func (h *Handler) logoutPost(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
+
 func newToken(n int) (string, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -172,4 +203,14 @@ func (h *Handler) currentUser(r *http.Request) *models.User {
 	}
 	u, _ := uAny.(*models.User)
 	return u
+}
+
+func new6DigitCode() (string, error) {
+	b := make([]byte, 3)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	n := int(b[0])<<16 | int(b[1])<<8 | int(b[2])
+	code := n % 1000000
+	return fmt.Sprintf("%06d", code), nil
 }

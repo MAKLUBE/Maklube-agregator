@@ -12,6 +12,7 @@ import (
 	"github.com/MAKLUBE/AP1_Final_Project/internal/app"
 	"github.com/MAKLUBE/AP1_Final_Project/internal/db"
 	"github.com/MAKLUBE/AP1_Final_Project/internal/handlers"
+	"github.com/MAKLUBE/AP1_Final_Project/internal/mailer"
 	"github.com/MAKLUBE/AP1_Final_Project/internal/middleware"
 	"github.com/MAKLUBE/AP1_Final_Project/internal/storage/mongo"
 )
@@ -45,6 +46,20 @@ func main() {
 	statusStore := mongo.NewOrderStatusHistoryStore(database)
 	halalStore := mongo.NewHalalVerificationStore(database)
 
+	smtpHost := getenv("SMTP_HOST", "")
+	smtpPort := getenv("SMTP_PORT", "587")
+	smtpUser := getenv("SMTP_USER", "")
+	smtpPass := getenv("SMTP_PASS", "")
+	smtpFrom := getenv("SMTP_FROM", smtpUser)
+
+	m := &mailer.SMTPMailer{
+		Host: smtpHost,
+		Port: smtpPort,
+		User: smtpUser,
+		Pass: smtpPass,
+		From: smtpFrom,
+	}
+
 	application := &app.Application{
 		Logger:      logger,
 		Templates:   tc,
@@ -56,6 +71,7 @@ func main() {
 		Orders:      orderStore,
 		OrderStatus: statusStore,
 		Halal:       halalStore,
+		Mailer:      m,
 	}
 
 	r := handlers.Routes(application)

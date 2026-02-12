@@ -16,4 +16,5 @@ type Application struct {
 	Orders      OrderStore
 	OrderStatus OrderStatusHistoryStore
 	Halal       HalalVerificationStore
+	Mailer      Mailer
 }

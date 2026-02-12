@@ -13,6 +13,8 @@ type UserStore interface {
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByID(ctx context.Context, id primitive.ObjectID) (*models.User, error)
 	CreateRestaurant(ctx context.Context, restaurant *models.Restaurant) error
+	SetVerification(ctx context.Context, userID primitive.ObjectID, code string, expiresAt time.Time) error
+	VerifyByEmailAndCode(ctx context.Context, email string, code string, now time.Time) (*models.User, error)
 }
 
 type SessionStore interface {
