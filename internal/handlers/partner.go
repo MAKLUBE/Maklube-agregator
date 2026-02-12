@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -163,9 +164,28 @@ func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	rest, err := h.getPartnerRestaurant(r, u.ID)
+	parts := splitPath(r.URL.Path)
+	if len(parts) < 4 {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	restaurantID, err := primitive.ObjectIDFromHex(parts[3])
+	if err != nil {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	rest, err := h.App.Restaurants.FindByID(ctx, restaurantID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)
+		return
+	}
+	if rest.OwnerUserID != u.ID {
+		h.clientError(w, http.StatusForbidden)
 		return
 	}
 
@@ -184,53 +204,78 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	rest, err := h.getPartnerRestaurant(r, u.ID)
+	parts := splitPath(r.URL.Path)
+	if len(parts) < 4 {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	restaurantID, err := primitive.ObjectIDFromHex(parts[3])
+	if err != nil {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	rest, err := h.App.Restaurants.FindByID(ctx, restaurantID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)
 		return
 	}
-
+	if rest.OwnerUserID != u.ID {
+		h.clientError(w, http.StatusForbidden)
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		h.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	mainProofType := strings.TrimSpace(r.PostForm.Get("main_proof_type"))
-	mainProofURLsRaw := strings.TrimSpace(r.PostForm.Get("main_proof_urls"))
-	ingredientProofsRaw := strings.TrimSpace(r.PostForm.Get("ingredient_proofs"))
-
-	if mainProofType == "" || mainProofURLsRaw == "" {
-		h.render(w, r, "partner_halal_request.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Fill required fields"},
-		})
-		return
-	}
-
-	mainURLParts := strings.Split(mainProofURLsRaw, ",")
-	mainURLs := make([]string, 0, len(mainURLParts))
-	for _, p := range mainURLParts {
-		v := strings.TrimSpace(p)
-		if v != "" {
-			mainURLs = append(mainURLs, v)
+	ingredientProofs := make([]models.IngredientProof, 0)
+	productIndexes := make(map[string]bool)
+	for key := range r.PostForm {
+		if strings.HasPrefix(key, "products[") && strings.HasSuffix(key, "][name]") {
+			index := key[9:strings.Index(key, "]")]
+			productIndexes[index] = true
 		}
 	}
-	if len(mainURLs) == 0 {
-		h.render(w, r, "partner_halal_request.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Add at least one main proof URL"},
+
+	for index := range productIndexes {
+		name := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] name", index)))
+		proofType := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] proof_type", index)))
+		url := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] url", index)))
+
+		if name == "" || url == "" {
+			h.render(w, r, "partner_halal_request.tmpl", &templateData{
+				User: u,
+				Data: map[string]any{"restaurant": rest},
+				Form: map[string]string{"error": "Please fill all required fields for each product"},
+			})
+			return
+		}
+
+		if !strings.HasPrefix(url, "http://") {
+			h.render(w, r, "partner_halal_request.tmpl", &templateData{
+				User: u,
+				Data: map[string]any{"restaurant": rest},
+				Form: map[string]string{"error": "URLs must start with http://"},
+			})
+			return
+		}
+
+		ingredientProofs = append(ingredientProofs, models.IngredientProof{
+			Ingredient: name,
+			ProofType:  proofType,
+			ProofURLs:  []string{url},
 		})
-		return
 	}
 
-	ingredientProofs, parseErr := parseIngredientProofs(ingredientProofsRaw)
-	if parseErr != nil {
+	if len(ingredientProofs) == 0 {
 		h.render(w, r, "partner_halal_request.tmpl", &templateData{
 			User: u,
 			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Ingredient proofs format: ingredient|proof_type|url1,url2"},
+			Form: map[string]string{"error": "Please add at least one product"},
 		})
 		return
 	}
@@ -240,14 +285,9 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 		RestaurantID:     rest.ID,
 		RequestedBy:      u.ID,
 		Status:           "pending",
-		MainProofType:    mainProofType,
-		MainProofURLs:    mainURLs,
 		IngredientProofs: ingredientProofs,
 		CreatedAt:        time.Now().UTC(),
 	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
 
 	if err := h.App.Halal.Insert(ctx, req); err != nil {
 		h.serverError(w, err)
@@ -410,11 +450,11 @@ func (h *Handler) partnerMenuEditPost(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.ObjectID) (*models.Restaurant, error) {
 	parts := splitPath(r.URL.Path)
-	if len(parts) < 3 {
+	if len(parts) < 4 {
 		return nil, errors.New("invalid path")
 	}
 
-	oid, err := primitive.ObjectIDFromHex(parts[2])
+	oid, err := primitive.ObjectIDFromHex(parts[3])
 	if err != nil {
 		return nil, err
 	}
@@ -434,11 +474,11 @@ func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.Object
 
 func (h *Handler) getPartnerMenuItem(r *http.Request, restaurantID primitive.ObjectID) (*models.MenuItem, error) {
 	parts := splitPath(r.URL.Path)
-	if len(parts) < 5 {
+	if len(parts) < 6 {
 		return nil, errors.New("invalid path")
 	}
 
-	itemID, err := primitive.ObjectIDFromHex(parts[4])
+	itemID, err := primitive.ObjectIDFromHex(parts[5])
 	if err != nil {
 		return nil, err
 	}

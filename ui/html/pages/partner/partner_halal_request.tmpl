@@ -1,21 +1,158 @@
-{{define "title"}}Halal request{{end}}
+{{define "title"}}Halal verification - Products{{end}}
 
-{{define "main"}}
-{{ $rest := index .Data "restaurant" }}
-<h2>Halal verification request</h2>
+ {{define "main"}}
+ {{ $rest := index .Data "restaurant" }}
+ <h2>Halal verification</h2>
+ <p class="muted">Add halal verification for product</p>
 
-{{with .Form.error}}<p class="error">{{.}}</p>{{end}}
+ {{with .Form.error}}<p class="error">{{.}}</p>{{end}}
 
-<form method="POST" class="form">
-  <label>Restaurant</label>
-  <input value="{{ $rest.Name }}" disabled>
+ <form method="POST" class="form" id="halalForm">
+   <div class="form-group">
+     <label>Restaurant</label>
+     <input value="{{ $rest.Name }}" disabled class="input-disabled">
+   </div>
 
-  <label>Proof type</label>
-  <input name="proof_type" required>
+   <div class="products-section">
+     <div class="section-header">
+       <h3>Products / Ingredients</h3>
+       <button type="button" id="addProductBtn" class="btn-secondary">Add Product</button>
+     </div>
 
-  <label>Proof URLs (comma separated)</label>
-  <input name="proof_urls" required>
+     <div id="productsContainer">
+       <div class="product-item" data-index="0">
+         <div class="product-header">
+           <span class="product-number">Product 1</span>
+           <button type="button" class="btn-remove" onclick="removeProduct(0)" style="display: none;">Remove</button>
+         </div>
+         <div class="form-row">
+           <div class="form-group">
+             <label>Product name <span class="required">*</span></label>
+             <input type="text" name="products[0][name]" required>
 
-  <button type="submit">Submit request</button>
-</form>
-{{end}}
+           </div>
+         </div>
+         <div class="form-row">
+           <div class="form-group">
+             <label>Proof type</label>
+             <select name="products[0][proof_type]">
+               <option value="certificate">Halal Certificate</option>
+             </select>
+           </div>
+         </div>
+         <div class="form-row">
+           <div class="form-group">
+             <label>Proof URL <span class="required">*</span></label>
+             <input type="url" name="products[0][url]" required>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+
+   <div class="form-actions">
+     <button type="submit" class="btn-primary">Submit Verification Request</button>
+     <a href="/partner/restaurants" class="btn-secondary">Cancel</a>
+   </div>
+ </form>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ <script>
+ let productCount = 1;
+
+ document.getElementById('addProductBtn').addEventListener('click', function() {
+   addProduct();
+ });
+
+ function addProduct() {
+   const container = document.getElementById('productsContainer');
+   const index = productCount;
+
+   const productHTML = `
+     <div class="product-item" data-index="${index}">
+       <div class="product-header">
+         <span class="product-number">Product ${index + 1}</span>
+         <button type="button" class="btn-remove" onclick="removeProduct(${index})">Remove</button>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>Product name <span class="required">*</span></label>
+           <input type="text" name="products[${index}][name]" required>
+         </div>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>Proof type</label>
+           <select name="products[${index}][proof_type]">
+             <option value="certificate">Halal Certificate</option>
+           </select>
+         </div>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>Proof URL <span class="required">*</span></label>
+           <input type="url" name="products[${index}][url]" required>
+           <small>Link to photo/document proving halal status</small>
+         </div>
+       </div>
+     </div>
+   `;
+
+   container.insertAdjacentHTML('beforeend', productHTML);
+   productCount++;
+   updateRemoveButtons();
+ }
+
+ function removeProduct(index) {
+   const item = document.querySelector(`.product-item[data-index="${index}"]`);
+   if (item) {
+     item.remove();
+     updateRemoveButtons();
+     renumberProducts();
+   }
+ }
+
+ function updateRemoveButtons() {
+   const items = document.querySelectorAll('.product-item');
+   const removeButtons = document.querySelectorAll('.btn-remove');
+
+   if (items.length === 1) {
+     removeButtons.forEach(btn => btn.style.display = 'none');
+   } else {
+     removeButtons.forEach(btn => btn.style.display = 'inline-block');
+   }
+ }
+
+ function renumberProducts() {
+   const items = document.querySelectorAll('.product-item');
+   items.forEach((item, idx) => {
+     const numberSpan = item.querySelector('.product-number');
+     numberSpan.textContent = `Product ${idx + 1}`;
+   });
+ }
+
+ document.getElementById('halalForm').addEventListener('submit', function(e) {
+   const items = document.querySelectorAll('.product-item');
+   if (items.length === 0) {
+     e.preventDefault();
+     alert('Please add at least one product');
+     return false;
+   }
+   return true;
+ });
+ </script>
+ {{end}}

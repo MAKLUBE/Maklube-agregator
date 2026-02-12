@@ -13,6 +13,12 @@ func NewTemplateCache(dir string) (map[string]*template.Template, error) {
 	nav := filepath.Join(dir, "partials", "nav.tmpl")
 	pagesDir := filepath.Join(dir, "pages")
 
+	funcMap := template.FuncMap{
+		"add": func(a, b int) int {
+			return a + b
+		},
+	}
+
 	err := filepath.WalkDir(pagesDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -25,7 +31,9 @@ func NewTemplateCache(dir string) (map[string]*template.Template, error) {
 		}
 
 		name := filepath.Base(path)
-		ts, err := template.ParseFiles(base, nav, path)
+
+		ts := template.New(name).Funcs(funcMap)
+		ts, err = ts.ParseFiles(base, nav, path)
 		if err != nil {
 			return fmt.Errorf("parse template %s: %w", name, err)
 		}
