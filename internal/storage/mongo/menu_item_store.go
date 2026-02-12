@@ -57,7 +57,6 @@ func (s *MenuItemStore) Update(ctx context.Context, m *models.MenuItem) error {
 			"description":   m.Description,
 			"category":      m.Category,
 			"price":         m.Price,
-			"photo_url":     m.PhotoURL,
 			"prep_time_min": m.PrepTimeMin,
 			"updated_at":    m.UpdatedAt,
 			"is_available":  m.IsAvailable,

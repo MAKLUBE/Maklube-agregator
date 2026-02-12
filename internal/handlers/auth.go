@@ -28,7 +28,7 @@ func (h *Handler) registerPost(w http.ResponseWriter, r *http.Request) {
 	username := strings.TrimSpace(r.PostForm.Get("username"))
 	email := strings.TrimSpace(strings.ToLower(r.PostForm.Get("email")))
 	password := r.PostForm.Get("password")
-	role := strings.TrimSpace(r.PostForm.Get("role")) // customer/partner
+	role := strings.TrimSpace(r.PostForm.Get("role"))
 
 	if username == "" || email == "" || password == "" {
 		h.render(w, r, "register.tmpl", &templateData{

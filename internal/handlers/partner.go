@@ -21,6 +21,7 @@ func (h *Handler) partnerIncomingOrders(w http.ResponseWriter, r *http.Request) 
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
+
 	rests, err := h.App.Restaurants.ListByOwner(ctx, u.ID)
 	if err != nil {
 		h.serverError(w, err)
@@ -108,7 +109,6 @@ func (h *Handler) partnerRestaurantEditPost(w http.ResponseWriter, r *http.Reque
 	rest.Name = strings.TrimSpace(r.PostForm.Get("name"))
 	rest.Description = strings.TrimSpace(r.PostForm.Get("description"))
 	rest.Phone = strings.TrimSpace(r.PostForm.Get("phone"))
-	rest.KaspiNumber = strings.TrimSpace(r.PostForm.Get("kaspi_number"))
 	rest.Address.AddressText = strings.TrimSpace(r.PostForm.Get("address_text"))
 	rest.Address.City = strings.TrimSpace(r.PostForm.Get("city"))
 	rest.Address.District = strings.TrimSpace(r.PostForm.Get("district"))
@@ -156,6 +156,138 @@ func (h *Handler) partnerMenuNewForm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	h.render(w, r, "partner_halal_request.tmpl", &templateData{
+		User: u,
+		Data: map[string]any{
+			"restaurant": rest,
+		},
+	})
+}
+
+func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		h.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	mainProofType := strings.TrimSpace(r.PostForm.Get("main_proof_type"))
+	mainProofURLsRaw := strings.TrimSpace(r.PostForm.Get("main_proof_urls"))
+	ingredientProofsRaw := strings.TrimSpace(r.PostForm.Get("ingredient_proofs"))
+
+	if mainProofType == "" || mainProofURLsRaw == "" {
+		h.render(w, r, "partner_halal_request.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest},
+			Form: map[string]string{"error": "Fill required fields"},
+		})
+		return
+	}
+
+	mainURLParts := strings.Split(mainProofURLsRaw, ",")
+	mainURLs := make([]string, 0, len(mainURLParts))
+	for _, p := range mainURLParts {
+		v := strings.TrimSpace(p)
+		if v != "" {
+			mainURLs = append(mainURLs, v)
+		}
+	}
+	if len(mainURLs) == 0 {
+		h.render(w, r, "partner_halal_request.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest},
+			Form: map[string]string{"error": "Add at least one main proof URL"},
+		})
+		return
+	}
+
+	ingredientProofs, parseErr := parseIngredientProofs(ingredientProofsRaw)
+	if parseErr != nil {
+		h.render(w, r, "partner_halal_request.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest},
+			Form: map[string]string{"error": "Ingredient proofs format: ingredient|proof_type|url1,url2"},
+		})
+		return
+	}
+
+	req := &models.HalalVerification{
+		ID:               primitive.NewObjectID(),
+		RestaurantID:     rest.ID,
+		RequestedBy:      u.ID,
+		Status:           "pending",
+		MainProofType:    mainProofType,
+		MainProofURLs:    mainURLs,
+		IngredientProofs: ingredientProofs,
+		CreatedAt:        time.Now().UTC(),
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.App.Halal.Insert(ctx, req); err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
+}
+
+func (h *Handler) partnerMenuList(w http.ResponseWriter, r *http.Request) {
+	u := h.currentUser(r)
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rest, err := h.getPartnerRestaurant(r, u.ID)
+	if err != nil {
+		h.clientError(w, http.StatusNotFound)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	items, err := h.App.MenuItems.ListByRestaurant(ctx, rest.ID)
+	if err != nil {
+		h.serverError(w, err)
+		return
+	}
+
+	h.render(w, r, "partner_menu_list.tmpl", &templateData{
+		User: u,
+		Data: map[string]any{
+			"restaurant": rest,
+			"items":      items,
+		},
+	})
+}
+
 func (h *Handler) partnerMenuNewPost(w http.ResponseWriter, r *http.Request) {
 	u := h.currentUser(r)
 	if u == nil {
@@ -193,37 +325,6 @@ func (h *Handler) partnerMenuNewPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
-}
-
-func (h *Handler) partnerMenuList(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	items, err := h.App.MenuItems.ListByRestaurant(ctx, rest.ID)
-	if err != nil {
-		h.serverError(w, err)
-		return
-	}
-
-	h.render(w, r, "partner_menu_list.tmpl", &templateData{
-		User: u,
-		Data: map[string]any{
-			"restaurant": rest,
-			"items":      items,
-		},
-	})
 }
 
 func (h *Handler) partnerMenuEditForm(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +393,6 @@ func (h *Handler) partnerMenuEditPost(w http.ResponseWriter, r *http.Request) {
 	item.Description = updated.Description
 	item.Category = updated.Category
 	item.Price = updated.Price
-	item.PhotoURL = updated.PhotoURL
 	item.PrepTimeMin = updated.PrepTimeMin
 	item.IsAvailable = updated.IsAvailable
 	item.UpdatedAt = time.Now().UTC()
@@ -308,102 +408,13 @@ func (h *Handler) partnerMenuEditPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
 }
 
-func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	h.render(w, r, "partner_halal_request.tmpl", &templateData{
-		User: u,
-		Data: map[string]any{
-			"restaurant": rest,
-		},
-	})
-}
-
-func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request) {
-	u := h.currentUser(r)
-	if u == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	rest, err := h.getPartnerRestaurant(r, u.ID)
-	if err != nil {
-		h.clientError(w, http.StatusNotFound)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		h.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	proofType := strings.TrimSpace(r.PostForm.Get("proof_type"))
-	proofURLsRaw := strings.TrimSpace(r.PostForm.Get("proof_urls"))
-	if proofType == "" || proofURLsRaw == "" {
-		h.render(w, r, "partner_halal_request.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Fill required fields"},
-		})
-		return
-	}
-
-	urlParts := strings.Split(proofURLsRaw, ",")
-	urls := make([]string, 0, len(urlParts))
-	for _, u := range urlParts {
-		val := strings.TrimSpace(u)
-		if val != "" {
-			urls = append(urls, val)
-		}
-	}
-	if len(urls) == 0 {
-		h.render(w, r, "partner_halal_request.tmpl", &templateData{
-			User: u,
-			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Add at least one URL"},
-		})
-		return
-	}
-
-	req := &models.HalalVerification{
-		ID:           primitive.NewObjectID(),
-		RestaurantID: rest.ID,
-		RequestedBy:  u.ID,
-		Status:       "pending",
-		ProofType:    proofType,
-		ProofURLs:    urls,
-		CreatedAt:    time.Now().UTC(),
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	if err := h.App.Halal.Insert(ctx, req); err != nil {
-		h.serverError(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/partner/restaurants", http.StatusSeeOther)
-}
-
 func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.ObjectID) (*models.Restaurant, error) {
 	parts := splitPath(r.URL.Path)
-
-	if len(parts) < 4 || parts[2] != "id" {
+	if len(parts) < 3 {
 		return nil, errors.New("invalid path")
 	}
 
-	oid, err := primitive.ObjectIDFromHex(parts[3])
+	oid, err := primitive.ObjectIDFromHex(parts[2])
 	if err != nil {
 		return nil, err
 	}
@@ -423,12 +434,11 @@ func (h *Handler) getPartnerRestaurant(r *http.Request, ownerID primitive.Object
 
 func (h *Handler) getPartnerMenuItem(r *http.Request, restaurantID primitive.ObjectID) (*models.MenuItem, error) {
 	parts := splitPath(r.URL.Path)
-
-	if len(parts) < 6 || parts[2] != "id" {
+	if len(parts) < 5 {
 		return nil, errors.New("invalid path")
 	}
 
-	itemID, err := primitive.ObjectIDFromHex(parts[5])
+	itemID, err := primitive.ObjectIDFromHex(parts[4])
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +461,6 @@ func (h *Handler) menuItemFromForm(r *http.Request, restaurantID primitive.Objec
 	description := strings.TrimSpace(r.PostForm.Get("description"))
 	category := strings.TrimSpace(r.PostForm.Get("category"))
 	priceStr := strings.TrimSpace(r.PostForm.Get("price"))
-	photoURL := strings.TrimSpace(r.PostForm.Get("photo_url"))
 	prepStr := strings.TrimSpace(r.PostForm.Get("prep_time_min"))
 	availableStr := strings.TrimSpace(r.PostForm.Get("is_available"))
 
@@ -477,13 +486,45 @@ func (h *Handler) menuItemFromForm(r *http.Request, restaurantID primitive.Objec
 		Description:  description,
 		Category:     category,
 		Price:        price,
-		PhotoURL:     photoURL,
 		PrepTimeMin:  prepTime,
 		IsAvailable:  isAvailable,
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 	}
 	return item, nil
+}
+
+func parseIngredientProofs(raw string) ([]models.IngredientProof, error) {
+	if strings.TrimSpace(raw) == "" {
+		return []models.IngredientProof{}, nil
+	}
+	lines := strings.Split(raw, "\n")
+	out := make([]models.IngredientProof, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "|")
+		if len(parts) != 3 {
+			return nil, errors.New("invalid ingredient proof line")
+		}
+		ingredient := strings.TrimSpace(parts[0])
+		proofType := strings.TrimSpace(parts[1])
+		urlParts := strings.Split(parts[2], ",")
+		urls := make([]string, 0, len(urlParts))
+		for _, p := range urlParts {
+			v := strings.TrimSpace(p)
+			if v != "" {
+				urls = append(urls, v)
+			}
+		}
+		if ingredient == "" || proofType == "" || len(urls) == 0 {
+			return nil, errors.New("invalid ingredient proof values")
+		}
+		out = append(out, models.IngredientProof{Ingredient: ingredient, ProofType: proofType, ProofURLs: urls})
+	}
+	return out, nil
 }
 
 func (h *Handler) partnerOrderUpdateStatus(w http.ResponseWriter, r *http.Request) {
@@ -509,7 +550,6 @@ func (h *Handler) partnerOrderUpdateStatus(w http.ResponseWriter, r *http.Reques
 		h.clientError(w, http.StatusBadRequest)
 		return
 	}
-
 	status := strings.TrimSpace(r.PostForm.Get("status"))
 	if status == "" {
 		http.Redirect(w, r, "/partner/orders", http.StatusSeeOther)

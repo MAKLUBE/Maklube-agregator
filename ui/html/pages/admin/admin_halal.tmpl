@@ -7,7 +7,7 @@
   <ul class="list">
     {{range .Data}}
       <li class="card">
-        <div><strong>Restaurant:</strong> {{.RestaurantID.Hex}}</div>
+        <div><strong>Restaurant:</strong> {{.Data.Name}}</div>
         <div class="muted">Proof type: {{.ProofType}}</div>
         {{if .ProofURLs}}
           <div class="muted">Proof URLs:</div>

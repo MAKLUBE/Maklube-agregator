@@ -83,17 +83,6 @@ func (h *Handler) orderCreate(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	rest, err := h.App.Restaurants.FindByID(ctx, restID)
-	if err != nil {
-		h.renderOrderFormError(w, r, restID, u, "Restaurant not found")
-		return
-	}
-
-	if paymentType == "kaspi_transfer" && strings.TrimSpace(rest.KaspiNumber) == "" {
-		h.renderOrderFormError(w, r, restID, u, "Kaspi transfer is not available for this")
-		return
-	}
-
 	menu, err := h.App.MenuItems.FindByID(ctx, menuID)
 	if err != nil || menu.RestaurantID != restID {
 		h.renderOrderFormError(w, r, restID, u, "Menu item not found")
