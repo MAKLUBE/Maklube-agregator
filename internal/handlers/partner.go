@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -178,7 +177,6 @@ func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-
 	rest, err := h.App.Restaurants.FindByID(ctx, restaurantID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)
@@ -188,7 +186,6 @@ func (h *Handler) partnerHalalRequestForm(w http.ResponseWriter, r *http.Request
 		h.clientError(w, http.StatusForbidden)
 		return
 	}
-
 	h.render(w, r, "partner_halal_request.tmpl", &templateData{
 		User: u,
 		Data: map[string]any{
@@ -204,66 +201,62 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	parts := splitPath(r.URL.Path)
-	if len(parts) < 4 {
-		h.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	restaurantID, err := primitive.ObjectIDFromHex(parts[3])
-	if err != nil {
-		h.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-	rest, err := h.App.Restaurants.FindByID(ctx, restaurantID)
+	rest, err := h.getPartnerRestaurant(r, u.ID)
 	if err != nil {
 		h.clientError(w, http.StatusNotFound)
 		return
 	}
-	if rest.OwnerUserID != u.ID {
-		h.clientError(w, http.StatusForbidden)
-		return
-	}
+
 	if err := r.ParseForm(); err != nil {
 		h.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	ingredientProofs := make([]models.IngredientProof, 0)
-	productIndexes := make(map[string]bool)
+	var ingredientProofs []models.IngredientProof
+
+	maxIndex := -1
 	for key := range r.PostForm {
-		if strings.HasPrefix(key, "products[") && strings.HasSuffix(key, "][name]") {
-			index := key[9:strings.Index(key, "]")]
-			productIndexes[index] = true
+		if strings.HasPrefix(key, "products[") && strings.Contains(key, "][name]") {
+			start := strings.Index(key, "[") + 1
+			end := strings.Index(key, "]")
+			if start > 0 && end > start {
+				if idx, err := strconv.Atoi(key[start:end]); err == nil {
+					if idx > maxIndex {
+						maxIndex = idx
+					}
+				}
+			}
 		}
 	}
 
-	for index := range productIndexes {
-		name := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] name", index)))
-		proofType := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] proof_type", index)))
-		url := strings.TrimSpace(r.PostForm.Get(fmt.Sprintf("products[%s] url", index)))
+	if maxIndex < 0 {
+		h.render(w, r, "partner_halal_request.tmpl", &templateData{
+			User: u,
+			Data: map[string]any{"restaurant": rest},
+			Form: map[string]string{"error": "Fill required fields"},
+		})
+		return
+	}
+
+	hasValidProduct := false
+	for i := 0; i <= maxIndex; i++ {
+		nameKey := "products[" + strconv.Itoa(i) + "][name]"
+		proofTypeKey := "products[" + strconv.Itoa(i) + "][proof_type]"
+		urlKey := "products[" + strconv.Itoa(i) + "][url]"
+
+		name := strings.TrimSpace(r.PostForm.Get(nameKey))
+		proofType := strings.TrimSpace(r.PostForm.Get(proofTypeKey))
+		url := strings.TrimSpace(r.PostForm.Get(urlKey))
 
 		if name == "" || url == "" {
-			h.render(w, r, "partner_halal_request.tmpl", &templateData{
-				User: u,
-				Data: map[string]any{"restaurant": rest},
-				Form: map[string]string{"error": "Please fill all required fields for each product"},
-			})
-			return
+			continue
 		}
 
-		if !strings.HasPrefix(url, "http://") {
-			h.render(w, r, "partner_halal_request.tmpl", &templateData{
-				User: u,
-				Data: map[string]any{"restaurant": rest},
-				Form: map[string]string{"error": "URLs must start with http://"},
-			})
-			return
+		if proofType == "" {
+			proofType = "certificate"
 		}
 
+		hasValidProduct = true
 		ingredientProofs = append(ingredientProofs, models.IngredientProof{
 			Ingredient: name,
 			ProofType:  proofType,
@@ -271,11 +264,11 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	if len(ingredientProofs) == 0 {
+	if !hasValidProduct {
 		h.render(w, r, "partner_halal_request.tmpl", &templateData{
 			User: u,
 			Data: map[string]any{"restaurant": rest},
-			Form: map[string]string{"error": "Please add at least one product"},
+			Form: map[string]string{"error": "Fill required fields"},
 		})
 		return
 	}
@@ -288,6 +281,9 @@ func (h *Handler) partnerHalalRequestPost(w http.ResponseWriter, r *http.Request
 		IngredientProofs: ingredientProofs,
 		CreatedAt:        time.Now().UTC(),
 	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
 	if err := h.App.Halal.Insert(ctx, req); err != nil {
 		h.serverError(w, err)
